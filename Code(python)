@@ -1,0 +1,112 @@
+import cv2
+import easygui
+import numpy as np
+import sys
+import matplotlib.pyplot as plt
+import os
+import tkinter as tk
+from tkinter import *
+from PIL import Image, ImageTk
+
+def upload(style):
+    ImagePath = easygui.fileopenbox()
+    cartoonify(ImagePath, style)
+
+def cartoonify(ImagePath, style):
+    originalimage = cv2.imread(ImagePath)
+    originalimage = cv2.cvtColor(originalimage, cv2.COLOR_BGR2RGB)
+    
+    if originalimage is None:
+        print("Can not find any image. Choose appropriate file")
+        sys.exit()
+    
+    if style == "Watercolor":
+        cartoonImage = cv2.stylization(originalimage, sigma_s=60, sigma_r=0.6)
+    elif style == "Sketch":
+        grayScaleImage = cv2.cvtColor(originalimage, cv2.COLOR_BGR2GRAY)
+        smoothGrayScale = cv2.medianBlur(grayScaleImage, 7)
+        getEdge = cv2.adaptiveThreshold(smoothGrayScale, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
+        colorImage = cv2.bilateralFilter(originalimage, 10, 250, 250)
+        cartoonImage = cv2.bitwise_and(colorImage, colorImage, mask=getEdge)
+        cartoonImage = cv2.detailEnhance(cartoonImage, sigma_s=10, sigma_r=0.15)
+    elif style == "Cartoonify":
+        # Convert to grayscale
+        gray = cv2.cvtColor(originalimage, cv2.COLOR_BGR2GRAY)
+        gray = cv2.medianBlur(gray, 5)
+        edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
+        color = cv2.bilateralFilter(originalimage, 9, 250, 250)
+        cartoonImage = cv2.bitwise_and(color, color, mask=edges)
+
+    hsv = cv2.cvtColor(cartoonImage, cv2.COLOR_RGB2HSV)
+    hsv[..., 2] = cv2.add(hsv[..., 2], 30)
+    cartoonImage = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+    cartoonImage = cv2.filter2D(cartoonImage, -1, kernel)
+
+    plt.imshow(cartoonImage)
+    plt.axis('off')
+    plt.show()
+
+    save_button = Button(top, text="Save Cartoon Image", command=lambda: save(cartoonImage, ImagePath), padx=10, pady=5)
+    save_button.configure(background='lavender', foreground='white', font=('calibri', 10, 'bold'))
+    save_button.place(relx=0.5, rely=0.9, anchor=CENTER)
+
+def save(cartoonImage, ImagePath):
+    newName = "cartoon_Image"
+    path1 = os.path.dirname(ImagePath)
+    extension = os.path.splitext(ImagePath)[1]
+    path = os.path.join(path1, newName + extension)
+    cv2.imwrite(path, cv2.cvtColor(cartoonImage, cv2.COLOR_RGB2BGR))
+    I = "Image saved by name " + newName + " at " + path
+    tk.messagebox.showinfo(title=None, message=I)
+
+# Create the main application window
+top = tk.Tk()
+top.state('zoomed')  # This makes the window fullscreen on Windows
+top.attributes('-fullscreen', True)  # This makes the window fullscreen on Unix systems
+top.title('Cartoony your Image !')
+
+# Get screen resolution
+screen_width = top.winfo_screenwidth()
+screen_height = top.winfo_screenheight()
+
+# Load and set background image
+bg_image_path = r"C:\Users\kakan\OneDrive\Pictures\Screenshots\Screenshot 2024-10-20 212249.png"
+bg_image = Image.open(bg_image_path)
+bg_image = bg_image.resize((screen_width, screen_height), Image.LANCZOS)  # Resize to fit the screen
+bg_image = ImageTk.PhotoImage(bg_image)
+
+canvas = Canvas(top, width=screen_width, height=screen_height)
+canvas.pack(fill=BOTH, expand=True)
+canvas.create_image(0, 0, image=bg_image, anchor=NW)
+
+label = Label(top, text="Cartoonify Your Image", font=('calibri', 40, 'bold'))
+canvas.create_window(screen_width // 2, 50, window=label)
+
+style_label = Label(top, text="Select Style to cartoonify:", font=('calibri', 28))
+canvas.create_window(screen_width // 2, 120, window=style_label)
+
+style_var = StringVar(value="Watercolor")
+watercolor_rb = Radiobutton(top, text="Watercolor", variable=style_var, value="Watercolor", font=('calibri', 20))
+sketch_rb = Radiobutton(top, text="  Sketch  ", variable=style_var, value="Sketch", font=('calibri', 20))
+cartoonify_rb = Radiobutton(top, text=" Animate  ", variable=style_var, value="Cartoonify", font=('calibri', 20))
+canvas.create_window(screen_width // 2, 180, window=watercolor_rb)
+canvas.create_window(screen_width // 2, 220, window=sketch_rb)
+canvas.create_window(screen_width // 2, 260, window=cartoonify_rb)
+
+upload_button = Button(top, text="Select Image", command=lambda: upload(style_var.get()), padx=20, pady=10)
+upload_button.configure(background='#4CAF50', foreground='white', font=('calibri', 10, 'bold'))
+canvas.create_window(screen_width // 2, 320, window=upload_button)
+
+# Exit Fullscreen button
+def exit_fullscreen():
+    top.attributes('-fullscreen', False)
+ 
+exit_button = Button(top, text="Exit Fullscreen", command=exit_fullscreen, padx=20, pady=10)
+exit_button.configure(background='#FF6347', foreground='white', font=('calibri', 10, 'bold'))
+canvas.create_window(screen_width // 2, 400, window=exit_button)
+
+# Close button
+close_button = Button(top, text="Close", command=top.destroy, padx=20, pady=10)
+close_button.configure(background='#FF6347', foreground='white', font=('calibri', 10, 'bold'))
+top.mainloop()

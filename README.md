@@ -18,26 +18,3 @@ A Python project that converts your photos into cartoon-style images using OpenC
 ![image](https://github.com/user-attachments/assets/d2a30385-5e98-405d-b042-b2f2f436cca0)
 
 
-📂 Project Structure
-
-
-cartoonify:
-
-
-      -cartoonify.py
-
-      
-      -README.md
-
-      
-      -output:
-
-      
-        ![image](https://github.com/user-attachments/assets/b31aa57e-f8c9-4c52-9567-5072e91f0847)
-
-        
-
-      examples
-
-      
-           ![image](https://github.com/user-attachments/assets/d2a30385-5e98-405d-b042-b2f2f436cca0)
